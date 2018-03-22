@@ -4,8 +4,8 @@ import * as types from '../src/lib/type';
 import { ApiHandler } from '../src/lib/api-handler';
 
 const testCreateOrder = async () => {
-  const exId = types.ExchangeId.Binance;
-  const exchange = <types.IExchange>Helper.getExchange(types.ExchangeId.Binance);
+  const exId = types.ExchangeId.Yobit;
+  const exchange = <types.IExchange>Helper.getExchange(types.ExchangeId.Yobit);
   const api = new ApiHandler();
   const order: types.IOrder = {
     symbol: 'ETH/BTC',            // symbol in CCXT format
@@ -19,16 +19,16 @@ const testCreateOrder = async () => {
 };
 
 const testQueryOrder = async () => {
-  const exId = types.ExchangeId.Binance;
-  const exchange = <types.IExchange>Helper.getExchange(types.ExchangeId.Binance);
+  const exId = types.ExchangeId.Yobit;
+  const exchange = <types.IExchange>Helper.getExchange(types.ExchangeId.Yobit);
   const api = new ApiHandler();
   const res = await api.queryOrder(exchange, '98162639', 'ETH/BTC');
   console.log(res);
 };
 
 const testQueryOrderStatus = async () => {
-  const exId = types.ExchangeId.Binance;
-  const exchange = <types.IExchange>Helper.getExchange(types.ExchangeId.Binance);
+  const exId = types.ExchangeId.Yobit;
+  const exchange = <types.IExchange>Helper.getExchange(types.ExchangeId.Yobit);
   const api = new ApiHandler();
   const res = await api.queryOrderStatus(exchange, '98162639', 'ETH/BTC');
   console.log(res);

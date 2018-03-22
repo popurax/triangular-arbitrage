@@ -3,12 +3,13 @@ import * as ccxt from 'ccxt';
 import { logger, Helper } from './common';
 import { ApiHandler } from './api-handler';
 import * as types from './type';
+import { ITriangle } from './type';
 
 const clc = require('cli-color');
 const config = require('config');
 
 export class Trading extends ApiHandler {
-  balances!: types.IBalances;
+  balances: types.IBalances;
   private worker = 0;
 
   /**
@@ -86,17 +87,17 @@ export class Trading extends ApiHandler {
   }
 
   // 订单执行前，可行性检查
-  async testOrder(exchange: types.IExchange, triangle: types.ITriangle) {
-    logger.info(`三角套利组合：${triangle.id}, 订单可行性检测...`);
+  async testOrder(exchange: types.IExchange, triangle: types.ITriangle){
+    logger.info(`三角取引：${triangle.id}, 取引を行います...`);
     if (!exchange.endpoint.private || !exchange.pairs) {
-      logger.error('交易所相关参数出错！！');
+      logger.error('exchangeのパラメータが間違っています!!');
       return;
     }
 
     // 查询资产
     const balances = await this.getBalance(exchange);
     if (!balances) {
-      logger.debug('未查找到持有资产！！');
+      logger.error('保有している通貨がありません!');
       return;
     }
     this.balances = balances;
@@ -107,12 +108,12 @@ export class Trading extends ApiHandler {
 
     const asset = this.balances[tradeTriangle.coin];
     if (!asset) {
-      logger.debug(`未查找到持有${tradeTriangle.coin}！！`);
+      logger.error(`${tradeTriangle.coin}を保有していません!!`);
       return;
     }
     const free = new BigNumber(asset.free);
     if (free.isZero()) {
-      logger.debug(`未查找到持有${tradeTriangle.coin}！！`);
+      logger.error(`${tradeTriangle.coin}を保有していません!!`);
       return;
     }
     // 如果a点为卖出时，检查是否满足最小下单总金额
@@ -128,7 +129,7 @@ export class Trading extends ApiHandler {
           amount: priceScale.cost
         });
         if (free.isLessThanOrEqualTo(minCostAmount)) {
-          logger.debug(`持有${free + ' ' + triangle.a.coinFrom},小于最低交易数量（${minCostAmount}）！！`);
+          logger.error(`持有${free + ' ' + triangle.a.coinFrom},小于最低交易数量（${minCostAmount}）！！`);
           return;
         }
       }
@@ -140,6 +141,7 @@ export class Trading extends ApiHandler {
     // ---------------------- A点开始------------------------
     const tradeEdgeA = this.getMockTradeEdge(exchange.pairs, triangle.a, tradeAmount, 1);
     if (!tradeEdgeA) {
+      logger.error("can't tradeEdgeA")
       return;
     }
     tradeTriangle.a = tradeEdgeA;
@@ -147,6 +149,7 @@ export class Trading extends ApiHandler {
     // ---------------------- B点开始------------------------
     const tradeEdgeB = this.getMockTradeEdge(exchange.pairs, triangle.b, tradeEdgeA.bigAmount, 2);
     if (!tradeEdgeB) {
+      logger.error("can't tradeEdgeB")
       return;
     }
     tradeTriangle.b = tradeEdgeB;
@@ -154,6 +157,7 @@ export class Trading extends ApiHandler {
     // ---------------------- C点开始------------------------
     const tradeEdgeC = this.getMockTradeEdge(exchange.pairs, triangle.c, tradeEdgeB.bigAmount, 3);
     if (!tradeEdgeC) {
+      logger.error("can't tradeEdgeC")
       return;
     }
     tradeTriangle.c = tradeEdgeC;

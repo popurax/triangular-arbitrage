@@ -6,7 +6,7 @@ import { logger, Helper } from './common';
 export { ccxt };
 export class ApiHandler {
 
-  async getBalance(exchange: types.IExchange): Promise<types.IBalances | undefined> {
+  async getBalance(exchange: types.IExchange): Promise<types.IBalances> {
 
     const api = exchange.endpoint.private;
     if (!api) {
@@ -18,7 +18,7 @@ export class ApiHandler {
         // TODO
         return <any>await bitbank.getAssets().toPromise();
       default:
-        return await api.fetchBalance();
+      return await api.fetchBalance();
     }
   }
 

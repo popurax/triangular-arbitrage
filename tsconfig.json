@@ -3,7 +3,7 @@
     "target": "ES2016",
     "module": "commonjs",
     "moduleResolution": "node",
-    "strict": true,
+    "strict": false,
     "types": [
       "node",
       "mocha"
@@ -13,7 +13,8 @@
     ],
     "outDir": "./dist",
     "declaration": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "sourceMap": true
   },
   "include": [
     "./src/**/*.ts",

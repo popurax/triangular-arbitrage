@@ -27,10 +27,13 @@ export interface IPairs {
   [pair: string]: IMarket;
 }
 
+// default.tomlのaccountに別名を付けられるようにするだけだし、要らないだろ。
 export enum ExchangeId {
   KuCoin = 'kucoin',
   Binance = 'binance',
   Bitbank = 'bitbank',
+  Yobit = 'yobit',
+  Livecoin = 'livecoin'
 }
 
 export const SupportExchanges = [
@@ -46,6 +49,14 @@ export const SupportExchanges = [
     id: ExchangeId.Bitbank,
     name: 'Bitbank',
   },
+  {
+    id: ExchangeId.Yobit,
+    name: 'Yobit',
+  },
+  {
+    id: ExchangeId.Livecoin,
+    name: 'Livecoin',
+  }
 ];
 
 export interface ICredentials {

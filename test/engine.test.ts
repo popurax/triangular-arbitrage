@@ -7,7 +7,7 @@ import * as find from 'pouchdb-find';
 PouchDB.plugin(find);
 
 const exInfo = async () => {
-  const ex = Helper.getExchange(types.ExchangeId.Binance);
+  const ex = Helper.getExchange(types.ExchangeId.Yobit);
   if (ex && ex.endpoint.private) {
     const api = ex.endpoint.private;
     const res = await api.loadMarkets();

@@ -64,11 +64,13 @@ export class TriangularArbitrage extends Event {
     try {
       // 查看是否已初始化api
       if (this.exchanges.get(exchangeId)) {
+        logger.debug('dont exchange get');
         return;
       }
 
       const exchange = Helper.getExchange(exchangeId);
       if (!exchange) {
+        logger.debug('dont helper get');
         return;
       }
       const api = exchange.endpoint.public || exchange.endpoint.private;
@@ -105,17 +107,29 @@ export class TriangularArbitrage extends Event {
     logger.info(clc.magentaBright('----- 套利测算 -----'));
     logger.debug('监视行情[开始]');
     try {
+
+      var sleep = function(time) {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                resolve();
+            }, time);
+        })};
+      await sleep(config.arbitrage.interval * 1000);
+      
       const exchange = this.exchanges.get(this.activeExchangeId);
       if (!exchange) {
+        logger.debug('no exchange');
         return;
       }
       const allTickers = await this.aggregator.getAllTickers(exchange, tickers);
       if (!allTickers) {
+        logger.debug('no tickers');
         return;
       }
       // 匹配候选者
       const candidates = await this.engine.getCandidates(exchange, allTickers);
       if (!candidates || candidates.length === 0) {
+        logger.debug('no candidates');
         return;
       }
 
@@ -135,11 +149,12 @@ export class TriangularArbitrage extends Event {
       for (const candidate of output) {
         const clcRate = candidate.rate < 0 ? clc.redBright(candidate.rate) : clc.greenBright(candidate.rate);
         const path = candidate.id.length < 15 ? candidate.id + ' '.repeat(15 - candidate.id.length) : candidate.id;
-        logger.info(`路径：${clc.cyanBright(path)} 利率: ${clcRate}`);
+        logger.info(`${clc.cyanBright(path)} rate:${clcRate}`);
       }
       logger.debug(`监视行情[终了] ${Helper.endTimer(timer)}`);
+
     } catch (err) {
-      logger.error(`监视行情[异常](${Helper.endTimer(timer)}): ${err}`);
+      logger.error(`监视行情[异常](${Helper.endTimer(timer)}): ${err}` + '\n' + err.stack);
     }
   }
 }

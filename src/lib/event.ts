@@ -23,11 +23,11 @@ export class Event extends EventEmitter {
 
   async onPlaceOrder(exchange: types.IExchange, triangle: types.ITriangle) {
     const timer = Helper.getTimer();
-    logger.debug('执行订单事件[开始]');
-    logger.info('执行订单');
+    logger.debug('取引実行イベント[開始]');
+    logger.info('取引実行');
     // await this.trading.placeOrder(exchange, triangle);
     await this.trading.testOrder(exchange, triangle);
-    logger.debug(`执行订单事件[终了] ${Helper.endTimer(timer)}`);
+    logger.debug(`取引実行イベント[終了] ${Helper.endTimer(timer)}`);
   }
 
   async onUpdateArbitage(ranks: types.IRank[]) {

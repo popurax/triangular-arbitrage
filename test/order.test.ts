@@ -1,4 +1,7 @@
 import * as assert from 'power-assert';
+import { Helper } from '../src/lib/common';
+import * as types from '../src/lib/type';
+
 const config = require('config');
 const api = require('binance');
 const exchangeAPI = new api.BinanceRest({
@@ -8,6 +11,11 @@ const exchangeAPI = new api.BinanceRest({
   recvWindow: parseInt(config.restRecvWindow, 10), // 可选，默认为5000，如果您收到时间戳错误，则增加
   disableBeautification: !config.restBeautify,
 });
+
+
+// const exchangeAPI = Helper.getExchange(types.ExchangeId.Yobit)
+
+
 const testOrder = async () => {
   const unit = 0.0001;
   const orderInfo = {

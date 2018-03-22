@@ -1,20 +1,24 @@
 import * as types from './type';
 import { logger, Helper } from './common';
+import { IExchange, IEdge } from './type';
+
+import Optional from 'typescript-optional';
 
 const config = require('config');
 
 export class Engine {
   // 获取组合的边
-  getEdge(tickers: types.ITickers, coinFrom: string, coinTo: string) {
+  getEdge(tickers: types.ITickers, coinFrom: string, coinTo: string): types.IEdge | undefined {
+
     if ((!tickers && Object.keys(tickers).length === 0) || !coinFrom || !coinTo) {
       return;
     }
-
+    
     // 查找匹配的ticker
     const buyTicker = tickers[coinTo + '/' + coinFrom];
-
+    
     const edge = <types.IEdge>{ coinFrom, coinTo };
-    if (buyTicker) {
+    if (buyTicker && buyTicker.ask !== 0) {
       edge.pair = buyTicker.symbol;
       edge.side = 'buy';
       edge.price = buyTicker.ask;
@@ -55,7 +59,13 @@ export class Engine {
     };
   }
 
-  private findCandidates(exchange: types.IExchange, tickers: types.ITickers, aCoinfrom: string, aCoinTo: string) {
+  private findCandidates(exchange: types.IExchange, tickers: types.ITickers, aCoinfrom: string, aCoinTo: string): types.ITriangle[] | undefined {
+
+    /*
+      通过BPair配对
+    */
+    const triangles: types.ITriangle[] = [];
+
     if (!exchange.markets) {
       return;
     }
@@ -68,18 +78,17 @@ export class Engine {
     const aPairs = exchange.markets[abc.a];
     const bPairs = exchange.markets[abc.b];
 
+    if (!aPairs || !bPairs) {
+      return triangles;
+    }
+
+    // 去掉b点coin
     const aCoinToSet: { [coin: string]: types.IMarket } = {};
     aPairs.map((market: types.IMarket) => {
       aCoinToSet[market.base] = market;
     });
-
-    // 去掉b点coin
     delete aCoinToSet[abc.b];
 
-    /*
-      通过BPair配对
-    */
-    const triangles: types.ITriangle[] = [];
     for (let i = 0; i < bPairs.length; i++) {
       const bPairMarket = bPairs[i];
 
@@ -102,7 +111,7 @@ export class Engine {
     return triangles;
   }
 
-  async getCandidates(exchange: types.IExchange, tickers: types.ITickers) {
+  async getCandidates(exchange: types.IExchange, tickers: types.ITickers): Promise<any> {
     let candidates: types.ITriangle[] = [];
     if (!exchange.markets) {
       return;
@@ -121,6 +130,8 @@ export class Engine {
 
       for (const path of paths) {
         const foundCandidates = this.findCandidates(exchange, tickers, marketPair, path);
+        // [object Object],[object Object]
+        logger.debug(foundCandidates + "");
         if (foundCandidates && foundCandidates.length > 0) {
           candidates = candidates.concat(foundCandidates);
         }

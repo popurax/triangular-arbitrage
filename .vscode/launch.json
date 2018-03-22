@@ -29,10 +29,12 @@
       "type": "node",
       "request": "launch",
       "name": "Launch Program",
-      "program": "${workspaceFolder}\\dist\\src\\lib\\bin\\start.js",
+      "program": "${workspaceFolder}/runner.js",
       "outFiles": [
         "${workspaceFolder}/dist/**/*.js"
-      ]
+      ],
+      "preLaunchTask": "prepare"
+
     },
     {
       "type": "node",
@@ -41,7 +43,7 @@
       "program": "${workspaceFolder}\\dist\\src\\lib\\bin\\ws.js",
       "outFiles": [
         "${workspaceFolder}/dist/**/*.js"
-      ]
+      ],
     },
     {
       "type": "node",
@@ -51,6 +53,12 @@
       "outFiles": [
         "${workspaceFolder}/dist/test/**/*.js"
       ]
-    }
+    },
+    {
+      "name": "Attach to server.js",
+      "type": "node",
+      "request": "attach",
+      "port": 12345
+    },
   ]
 }

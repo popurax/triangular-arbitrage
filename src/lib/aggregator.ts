@@ -59,6 +59,16 @@ export class Aggregator {
             };
           }
           return tickers;
+        case types.ExchangeId.Yobit:
+          const tickers2: types.ITickers = {};
+          await api.loadMarkets();
+          const symbols2 = Object.keys (api.markets);
+          const btc_symbols = symbols2.filter(s => s.split("/")[0] == "BTC" || s.split("/")[1] == "BTC");
+          for(const symbol of btc_symbols){
+            const ticker = await api.fetchTicker(symbol);
+            tickers2[symbol] = ticker;
+          }
+          return tickers2;
         default:
           return await api.fetchTickers();
       }

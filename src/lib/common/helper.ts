@@ -2,15 +2,19 @@ import * as types from '../type';
 import { Rate } from '../rate';
 import { BigNumber } from 'bignumber.js';
 import * as bitbank from 'bitbank-handler';
+import { ExchangeId } from '../type';
+import { coinexchange } from 'ccxt';
+import { logger } from './index';
 
 const ccxt = require('ccxt');
 const config = require('config');
 const excTime = require('execution-time');
 const binance = require('binance');
+const cloudscraper = require('cloudscraper');
 
 export class Helper {
-  static getPrivateKey(exchangeId: types.ExchangeId) {
-    if (config.account[exchangeId] && config.account[exchangeId].apiKey && config.account[exchangeId].secret) {
+  static getPrivateKey(exchangeId: types.ExchangeId): types.ICredentials | undefined {
+    if (config.account[exchangeId]) {
       return <types.ICredentials>{
         apiKey: config.account[exchangeId].apiKey,
         secret: config.account[exchangeId].secret,
@@ -23,7 +27,7 @@ export class Helper {
     switch (exchangeId) {
       case types.ExchangeId.KuCoin:
       case types.ExchangeId.Binance:
-        let ws, rest;
+        var ws, rest;
         if (exchangeId === types.ExchangeId.Binance) {
           ws = new binance.BinanceWS();
           rest = new binance.BinanceRest({
@@ -45,14 +49,6 @@ export class Helper {
             },
           };
         }
-        return {
-          id: exchangeId,
-          endpoint: {
-            public: new ccxt[exchangeId](),
-            ws,
-            rest,
-          },
-        };
       case types.ExchangeId.Bitbank:
         if (privateKey) {
           return {
@@ -69,6 +65,45 @@ export class Helper {
           id: exchangeId,
           endpoint: {
             public: new bitbank.Bitbank({}),
+          },
+        };
+      case types.ExchangeId.Livecoin:
+      case types.ExchangeId.Yobit:
+        if (privateKey) {
+          var bypass_url;
+          if (exchangeId == types.ExchangeId.Livecoin) {
+            bypass_url = "https://api.livecoin.net/"
+          } else if (exchangeId == types.ExchangeId.Yobit) {
+            bypass_url = "https://yobit.net/api"
+          }
+          const scrapeCloudflareHttpHeaderCookie = async (url) =>
+            (new Promise((resolve, reject) =>
+              (cloudscraper.get(url, function (error, response, body) {
+                if (error) {
+                  reject(error)
+                } else {
+                  resolve(response.request.headers)
+                }
+              }))
+            ));
+          const ex = new ccxt[exchangeId](privateKey);
+          ex.headers = scrapeCloudflareHttpHeaderCookie(bypass_url);
+          return {
+            id: exchangeId,
+            endpoint: {
+              private: ex,
+              ws,
+              rest,
+            },
+          };
+        }
+      default:
+        return {
+          id: exchangeId,
+          endpoint: {
+            public: new ccxt[exchangeId](),
+            ws,
+            rest,
           },
         };
     }
@@ -88,7 +123,7 @@ export class Helper {
     return markets;
   }
 
-  static changeBinanceTickers(tickers: types.Binance24HrTicker[], pairs: types.IPairs) {
+  static changeBinanceTickers(tickers: types.Binance24HrTicker[], pairs: types.IPairs): types.ITickers | undefined {
     const allTickers: types.ITickers = {};
     const pairKeys = Object.keys(pairs);
     for (const pair of pairKeys) {
@@ -115,7 +150,7 @@ export class Helper {
    * 获取排行数据
    * @param triangles 三角套利数组
    */
-  static getRanks(exchangeId: types.ExchangeId, triangles: types.ITriangle[]) {
+  static getRanks(exchangeId: types.ExchangeId, triangles: types.ITriangle[]): types.IRank[] | undefined {
     const ranks: types.IRank[] = [];
     triangles.reduce(
       (pre, tri) => {
@@ -215,18 +250,18 @@ export class Helper {
   }
 
   /**
-   * 获取基础货币交易额度（通过B和C和可用余额取最小）
+   * 基本通貨取引金額を取得する（BとCと残高からの最小額）
    * @see https://github.com/zlq4863947/triangular-arbitrage/issues/13
    */
   static getBaseAmountByBC(triangle: types.ITriangle, freeAmount: BigNumber) {
     const { a, b, c } = triangle;
-    // C点到A点的数量
+    // ポイントCからAの数
     const c2aAmount = Helper.getConvertedAmount({
       side: triangle.c.side,
       exchangeRate: triangle.c.price,
       amount: triangle.b.quantity
     });
-    // 换回A点的数量
+    // A点の数に戻す
     const dAmount = Helper.getConvertedAmount({
       side: triangle.c.side,
       exchangeRate: triangle.c.price,
