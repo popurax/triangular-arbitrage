@@ -1,0 +1,82 @@
+# 配置文件
+
+###
+### [display]
+### 
+### 画面配置
+###
+[display]
+  maxRows = 40
+
+###
+### [exchange]
+### 
+### 交易所相关配置
+###
+[exchange]
+  # 初始默认交易所[kucoin/binance/bitbank], 之后可以通过参数变更
+  active = "binance"
+
+###
+### [arbitrage]
+### 
+### 三角套利相关配置
+###
+[arbitrage]
+  # 套利监视间隔(秒)
+  # 币安时无视此项，tickers取得间隔固定（1秒）
+  interval = 1
+  # 最小盈利率
+  minRateProfit = 0.05
+
+###
+### [log]
+### 日志配置
+###
+[log]
+  # 是否开启debug信息
+  debug = false
+
+###
+### [storage]
+### 存储配置
+###
+[storage]
+  # PouchDB数据库URL(没有可以填空字符串)
+  #url = "http://127.0.0.1:5984"
+  url = ""
+  # 是否存储用以显示的tick排行数据
+  tickRank = false
+
+###
+### [trading]
+### 交易相关配置
+###
+[trading]
+  # 是否只进行模拟交易
+  mock = false
+  # 最大同时进行的交易会话数
+  limit = 1
+
+###
+### [account]
+### 账户相关配置
+### apiKey与secret在获取行情api中并不是必须项目，只有交易相关api中为必须项目
+###
+[account]
+  # 库币 
+  [account.kucoin]
+    apiKey = "c"
+    secret = "x"
+
+  # binance
+  [account.binance]
+    # 账号
+    apiKey = "cc"
+    secret = "xx"
+
+  # bitbank
+  [account.bitbank]
+    # 账号
+    apiKey = "xxx"
+    secret = "ccc"
