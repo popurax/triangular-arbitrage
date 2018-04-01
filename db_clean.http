@@ -1,0 +1,7 @@
+GET http://127.0.0.1:5984/_all_dbs
+###
+DELETE http://127.0.0.1:5984/queue
+###
+DELETE http://127.0.0.1:5984/rank
+###
+DELETE http://127.0.0.1:5984/trade

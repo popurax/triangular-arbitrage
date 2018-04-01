@@ -4,6 +4,7 @@ import { Event } from './event';
 import { Engine } from './engine';
 import { Aggregator } from './aggregator';
 import * as types from './type';
+import { Storage } from './storage';
 
 const clc = require('cli-color');
 const config = require('config');
@@ -23,6 +24,7 @@ export class TriangularArbitrage extends Event {
     this.activeExchangeId = <types.ExchangeId>config.exchange.active;
     this.engine = new Engine();
     this.aggregator = new Aggregator();
+
   }
 
   async start(activeExchangeId?: types.ExchangeId) {
@@ -42,7 +44,7 @@ export class TriangularArbitrage extends Event {
         }
         exchange.endpoint.ws.onAllTickers(this.estimate.bind(this));
       } else {
-        this.worker = setInterval(this.estimate.bind(this), config.arbitrage.interval * 1000);
+        this.worker = await setInterval(this.estimate.bind(this), config.arbitrage.interval * 1000);
       }
 
       logger.info('----- 机器人启动完成 -----');
@@ -113,21 +115,21 @@ export class TriangularArbitrage extends Event {
         return;
       }
       // 清理超时数据
-      // await this.tradingQueue.clearQueue();
-      /* const limitCheck = await Helper.checkQueueLimit(this.tradingQueue)
-       if (!limitCheck) {
-         logger.debug('交易会话数已到限制数!!');
-         return;
-       }*/
+      // const limitCheck = await Helper.checkQueueLimit(this.storage.queue)
+      //  if (!limitCheck) {
+      //    logger.error('取引セッションの数が限界に達しました！');
+      //    await this.storage.queue.clearQueue()
+      //    return;
+      //  }
       const allTickers = await this.aggregator.getAllTickers(exchange, tickers);
       if (!allTickers) {
-        logger.debug('no tickers');
+        logger.error('no tickers');
         return;
       }
       // 匹配候选者
       const candidates = await this.engine.getCandidates(exchange, allTickers);
       if (!candidates || candidates.length === 0) {
-        logger.debug('no candidates');
+        logger.error('no candidates');
         return;
       }
 
@@ -150,7 +152,6 @@ export class TriangularArbitrage extends Event {
         logger.info(`${clc.cyanBright(path)} rate:${clcRate}`);
       }
       logger.debug(`监视行情[终了] ${Helper.endTimer(timer)}`);
-
     } catch (err) {
       logger.error(`监视行情[异常](${Helper.endTimer(timer)}): ${JSON.stringify(err)}`);
     }

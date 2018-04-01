@@ -70,13 +70,10 @@ export class Helper {
         };
       case types.ExchangeId.Livecoin:
       case types.ExchangeId.Yobit:
+      case types.ExchangeId.Bleutrade:
+      case types.ExchangeId.Coinexchange:
         if (privateKey) {
-          var bypass_url;
-          if (exchangeId == types.ExchangeId.Livecoin) {
-            bypass_url = "https://api.livecoin.net/"
-          } else if (exchangeId == types.ExchangeId.Yobit) {
-            bypass_url = "https://yobit.net/api"
-          }
+          const ex = new ccxt[exchangeId](privateKey);
           const scrapeCloudflareHttpHeaderCookie = async (url) =>
             (new Promise((resolve, reject) =>
               (cloudscraper.get(url, function (error, response, body) {
@@ -87,8 +84,15 @@ export class Helper {
                 }
               }))
             ));
-          const ex = new ccxt[exchangeId](privateKey);
-          ex.headers = scrapeCloudflareHttpHeaderCookie(bypass_url);
+          if (exchangeId == types.ExchangeId.Livecoin) {
+            // ex.headers = scrapeCloudflareHttpHeaderCookie("https://api.livecoin.net/");
+          } else if (exchangeId == types.ExchangeId.Yobit) {
+            ex.headers = scrapeCloudflareHttpHeaderCookie("https://yobit.net/");
+          } else if (exchangeId == types.ExchangeId.Bleutrade) {
+            ex.headers = scrapeCloudflareHttpHeaderCookie("https://bleutrade.com/");
+          } else if (exchangeId == types.ExchangeId.Coinexchange) {
+            ex.headers = scrapeCloudflareHttpHeaderCookie("https://www.coinexchange.io/");
+          }
           return {
             id: exchangeId,
             endpoint: {
@@ -230,6 +234,15 @@ export class Helper {
     if (!symbol) {
       return;
     }
+
+    //XXX cost Undefined, make. 
+    if(!symbol.limits.cost){
+      symbol.limits.cost = {
+        max: symbol.limits.price.max * symbol.limits.amount.max,
+        min: symbol.limits.price.min * symbol.limits.amount.min
+      };
+    }
+
     return {
       amount: symbol.precision.amount,
       price: symbol.precision.price,
@@ -302,5 +315,31 @@ export class Helper {
       return true;
     }
     return false;
+  }
+
+
+  //TODO normal functionarization.
+  static sleep = (async function (num) {
+    return await new Promise((resolve) => setTimeout(resolve, num));
+  });
+
+  static async retryWithBackoff(delay: number, max: number, callee: any){
+    let backoff = delay;
+
+    while (true) {
+      try {
+        return await callee;
+      } catch (error) {
+
+        // max over throw.
+        if (backoff == max) {
+          throw error;
+        }
+
+        backoff = Math.min(backoff * 2, max);
+        logger.error(`Method failed. Try after ${backoff / 1000}s : ${error}`);
+        await this.sleep(backoff);
+      }
+    }
   }
 }

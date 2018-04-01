@@ -29,7 +29,7 @@ export class Mocker extends ApiHandler {
     // 获取交易精度
     const priceScale = Helper.getPriceScale(pairs, edge.pair);
     if (!priceScale) {
-      logger.debug(`未取得交易精度！！`);
+      logger.info(`正確なpriceScale情報が取得できません!!`);
       return;
     }
     // 获取格式化精度(买->价格精度、卖->数量精度)
@@ -37,13 +37,13 @@ export class Mocker extends ApiHandler {
     // 格式化购买数量(多余小数位舍弃)
     const fmAmount = new BigNumber(amount.toFixed(precision, 1));
     if (fmAmount.isZero()) {
-      logger.debug(`格式化购买数量后结果为0！！`);
+      logger.info(`通貨の量が0です!!`);
       return;
     }
     // 查询交易对手续费
     const feeRate = pairs[edge.pair].maker;
     if (!feeRate || feeRate <= 0) {
-      logger.debug(`未取得交易对的手续费！！`);
+      logger.info(`取引手数料の情報が取得出来ないか、不正確です!!`);
       return;
     }
     tradeEdge.amount = +amount.toFixed(priceScale.amount, 1);
@@ -61,14 +61,14 @@ export class Mocker extends ApiHandler {
   async testOrder(exchange: types.IExchange, triangle: types.ITriangle) {
     logger.info(`三角套利组合：${triangle.id}, 订单可行性检测...`);
     if (!exchange.endpoint.private || !exchange.pairs) {
-      logger.error('交易所相关参数出错！！');
+      logger.error('Exchange関連の情報がありません!!');
       return;
     }
 
     // 查询资产
     const balances = await this.getBalance(exchange);
     if (!balances) {
-      logger.debug('未查找到持有资产！！');
+      logger.error('通貨を保持していません!!');
       return;
     }
 
@@ -79,17 +79,18 @@ export class Mocker extends ApiHandler {
 
     const asset = balances[tradeTriangle.coin];
     if (!asset) {
-      logger.debug(`未查找到持有${tradeTriangle.coin}！！`);
+      logger.error(`${tradeTriangle.coin}を保有することができません!!`);
       return;
     }
     const free = new BigNumber(asset.free);
     if (free.isZero()) {
-      logger.debug(`未查找到持有${tradeTriangle.coin}！！`);
+      logger.error(`${tradeTriangle.coin}のフリーな保有量がありません!!`);
       return;
     }
     // 获取交易精度
     const priceScale = Helper.getPriceScale(exchange.pairs, triangle.a.pair);
     if (!priceScale || !priceScale.cost) {
+      logger.error(`正確なpricescale情報が取得できません!! priceScale:${priceScale.cost} a.pair:${triangle.a.pair}`)
       return;
     }
     // 检查最小交易数量
@@ -105,7 +106,7 @@ export class Mocker extends ApiHandler {
     }
 
     if (triangle.a.side === 'sell' && free.isLessThanOrEqualTo(minAmount)) {
-      logger.debug(`持有${free + ' ' + triangle.a.coinFrom},小于最低交易数量（${minAmount}）！！`);
+      logger.error(`持有${free + ' ' + triangle.a.coinFrom},小于最低交易数量（${minAmount}）！！`);
       return;
     }
     // 查找最佳交易量
@@ -114,6 +115,7 @@ export class Mocker extends ApiHandler {
     // ---------------------- A点开始------------------------
     const tradeEdgeA = this.getMockTradeEdge(exchange.pairs, triangle.a, tradeAmount);
     if (!tradeEdgeA) {
+      logger.error(`tradeEdgeAの情報がとれません!!`)
       return;
     }
     tradeTriangle.a = tradeEdgeA;
@@ -138,6 +140,7 @@ export class Mocker extends ApiHandler {
     });
     const tradeEdgeB = this.getMockTradeEdge(exchange.pairs, triangle.b, bAmount);
     if (!tradeEdgeB) {
+      logger.error(`tradeEdgeBの情報がとれません!!`)
       return;
     }
     tradeTriangle.b = tradeEdgeB;
@@ -153,6 +156,7 @@ export class Mocker extends ApiHandler {
     }
     const tradeEdgeC = this.getMockTradeEdge(exchange.pairs, triangle.c, cAmount);
     if (!tradeEdgeC) {
+      logger.error(`tradeEdgeCの情報がとれません!!`)
       return;
     }
     tradeTriangle.c = tradeEdgeC;

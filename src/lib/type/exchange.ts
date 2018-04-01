@@ -33,7 +33,9 @@ export enum ExchangeId {
   Binance = 'binance',
   Bitbank = 'bitbank',
   Yobit = 'yobit',
-  Livecoin = 'livecoin'
+  Livecoin = 'livecoin',
+  Bleutrade = 'bleutrade',
+  Coinexchange = 'coinexchange'
 }
 
 export const SupportExchanges = [
@@ -56,6 +58,14 @@ export const SupportExchanges = [
   {
     id: ExchangeId.Livecoin,
     name: 'Livecoin',
+  },
+  {
+    id: ExchangeId.Bleutrade,
+    name: 'Bleutrade'
+  },
+  {
+    id: ExchangeId.Coinexchange,
+    name: 'Coinexchange'
   }
 ];
 

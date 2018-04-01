@@ -67,6 +67,7 @@ export class Engine {
     const triangles: types.ITriangle[] = [];
 
     if (!exchange.markets) {
+      logger.error(`findCandidates: marketsがありません!!`);
       return;
     }
     const abc = {
@@ -79,6 +80,7 @@ export class Engine {
     const bPairs = exchange.markets[abc.b];
 
     if (!aPairs || !bPairs) {
+      logger.error(`findCandidates: aPairsかbPairsがありません!!`)
       return triangles;
     }
 
@@ -114,11 +116,13 @@ export class Engine {
   async getCandidates(exchange: types.IExchange, tickers: types.ITickers): Promise<any> {
     let candidates: types.ITriangle[] = [];
     if (!exchange.markets) {
+      logger.error(`getCandidates: exchange.marketsがありません!!`)
       return;
     }
     const marketPairs = Object.keys(exchange.markets);
     const api = exchange.endpoint.public || exchange.endpoint.private;
     if (!api || marketPairs.length === 0) {
+      logger.error(`getCandidates: apiが無いか、marketPairs.lengthが0です!!`)
       return;
     }
     const timer = Helper.getTimer();

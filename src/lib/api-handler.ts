@@ -2,6 +2,7 @@ import * as ccxt from 'ccxt';
 import * as types from './type';
 import { Bitbank } from 'bitbank-handler';
 import { logger, Helper } from './common';
+const config = require('config');
 
 export { ccxt };
 export class ApiHandler {
@@ -16,7 +17,7 @@ export class ApiHandler {
         // TODO
         return <any>await bitbank.getAssets().toPromise();
       default:
-      return await api.fetchBalance();
+        return await Helper.retryWithBackoff(500, 10000, api.fetchBalance());
     }
   }
 
@@ -33,12 +34,19 @@ export class ApiHandler {
     return asset.free;
   }
 
+  //TODO MarketOrder otherexchange necessities.
   async createOrder(exchange: types.IExchange, order: types.IOrder): Promise<ccxt.Order | undefined> {
-    const api = <ccxt.Exchange>exchange.endpoint.private;
-    if (!api) {
+    if (!exchange.endpoint.private) {
+      logger.error('apiが無いので、createOrderが行えませんでした。')
       return;
     }
-    return await api.createOrder(order.symbol, order.type, order.side, String(order.amount), String(order.price));
+    
+    const api = <ccxt.Exchange>exchange.endpoint.private;
+    if(config.arbitrage.isMarketOrder){
+      return await api.createOrder(order.symbol, 'market', order.side, String(order.amount), String(order.price));
+    }else{
+      return await api.createOrder(order.symbol, order.type, order.side, String(order.amount), String(order.price));
+    }
   }
 
   async queryOrder(exchange: types.IExchange, orderId: string, symbol: string): Promise<ccxt.Order | undefined> {

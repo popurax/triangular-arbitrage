@@ -21,8 +21,10 @@ export class Aggregator {
           'BTC/JPY': { id: 'btc_jpy', symbol: 'BTC/JPY', base: 'BTC', quote: 'JPY' },
         };
       default:
-        return await api.loadMarkets();
+        let loadMarkets = await Helper.retryWithBackoff(500, 30000, api.loadMarkets());
+        return loadMarkets;
     }
+
   }
 
   async getAllTickers(exchange: types.IExchange, extTickers?: types.Binance24HrTicker[]): Promise<types.ITickers | undefined> {
@@ -62,15 +64,15 @@ export class Aggregator {
         case types.ExchangeId.Yobit:
           const tickers2: types.ITickers = {};
           await api.loadMarkets();
-          const symbols2 = Object.keys (api.markets);
+          const symbols2 = Object.keys(api.markets);
           const btc_symbols = symbols2.filter(s => s.split("/")[0] == "BTC" || s.split("/")[1] == "BTC");
-          for(const symbol of btc_symbols){
+          for (const symbol of btc_symbols) {
             const ticker = await api.fetchTicker(symbol);
             tickers2[symbol] = ticker;
           }
           return tickers2;
         default:
-          return await api.fetchTickers();
+          return await Helper.retryWithBackoff(500, 10000, api.fetchTickers());
       }
     } catch (err) {
       logger.error(`getAllTickers出错： ${err.message ? err.message : err.msg}`);
