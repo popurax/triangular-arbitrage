@@ -9,6 +9,10 @@ export interface ITickers {
   [pair: string]: ITicker;
 }
 
+export interface IEdgeCoinexchange extends IEdge{
+  tradeCount: number;
+}
+
 /**
  * 三角组合的边
  */
@@ -30,9 +34,9 @@ export interface IEdge {
 export interface ITriangle {
   // 三角组合唯一id（例:btc-bnb-bcd）
   id: string;
-  a: IEdge;
-  b: IEdge;
-  c: IEdge;
+  a: IEdge | IEdgeCoinexchange;
+  b: IEdge | IEdgeCoinexchange;
+  c: IEdge | IEdgeCoinexchange;
   // 利率
   rate: number;
   // 时间戳

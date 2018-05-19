@@ -18,7 +18,8 @@
   },
   "include": [
     "./src/**/*.ts",
-    "./test/**/*.ts"
+    "./test/**/*.ts",
+    "node_modules/@types/puppeteer/index.d.ts"
   ],
   "exclude": [
     "node_modules"

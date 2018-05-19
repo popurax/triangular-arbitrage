@@ -75,15 +75,14 @@ export class Helper {
         if (privateKey) {
           const ex = new ccxt[exchangeId](privateKey);
           const scrapeCloudflareHttpHeaderCookie = async (url) =>
-            (new Promise((resolve, reject) =>
-              (cloudscraper.get(url, function (error, response, body) {
+            (async (resolve, reject) =>
+              (cloudscraper.get(url, (error, response, body) => {
                 if (error) {
                   reject(error)
                 } else {
                   resolve(response.request.headers)
-                }
-              }))
-            ));
+                }})));
+          
           if (exchangeId == types.ExchangeId.Livecoin) {
             // ex.headers = scrapeCloudflareHttpHeaderCookie("https://api.livecoin.net/");
           } else if (exchangeId == types.ExchangeId.Yobit) {
@@ -233,6 +232,13 @@ export class Helper {
     const symbol = pairs[pairName];
     if (!symbol) {
       return;
+    }
+
+    if (!symbol.limits){
+      symbol.limits = {
+        'amount': {'max': 100000.0, 'min': 0.01},
+        'price': {'max': 100000.0, 'min': 1e-06}
+      }
     }
 
     //XXX cost Undefined, make. 

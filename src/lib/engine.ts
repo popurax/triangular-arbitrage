@@ -1,28 +1,40 @@
 import * as types from './type';
 import { logger, Helper } from './common';
 import { IExchange, IEdge } from './type';
+import { coinexchange } from 'ccxt';
 
 import Optional from 'typescript-optional';
 
 const config = require('config');
 
+// TODO Helperクラスに移動するべきか?
+export function isIEdgeCoinexchange(edge: types.IEdge | types.IEdgeCoinexchange): edge is types.IEdgeCoinexchange {
+  return config.exchange.active == "coinexchange" ;
+}
+
 export class Engine {
+  
   // 获取组合的边
-  getEdge(tickers: types.ITickers, coinFrom: string, coinTo: string): types.IEdge | undefined {
+  getEdge(tickers: types.ITickers, coinFrom: string, coinTo: string): types.IEdge | types.IEdgeCoinexchange | undefined {
 
     if ((!tickers && Object.keys(tickers).length === 0) || !coinFrom || !coinTo) {
       return;
     }
     
-    // 查找匹配的ticker
-    const buyTicker = tickers[coinTo + '/' + coinFrom];
     
-    const edge = <types.IEdge>{ coinFrom, coinTo };
+    // 查找匹配的ticker
+    
+    const buyTicker = tickers[coinTo + '/' + coinFrom];
+
+    const edge = <types.IEdge | types.IEdgeCoinexchange>{ coinFrom, coinTo };
     if (buyTicker && buyTicker.ask !== 0) {
       edge.pair = buyTicker.symbol;
       edge.side = 'buy';
       edge.price = buyTicker.ask;
       edge.quantity = buyTicker.askVolume;
+      if(isIEdgeCoinexchange(edge)){
+        edge.tradeCount = buyTicker.info['TradeCount'];
+      }
     } else {
       // 查找匹配的ticker
       const sellTicker = tickers[coinFrom + '/' + coinTo];
@@ -33,6 +45,9 @@ export class Engine {
       edge.side = 'sell';
       edge.price = sellTicker.bid;
       edge.quantity = sellTicker.bidVolume;
+      if(isIEdgeCoinexchange(edge)){
+        edge.tradeCount = sellTicker.info['TradeCount'];
+      }
     }
     return edge;
   }
@@ -113,7 +128,7 @@ export class Engine {
     return triangles;
   }
 
-  async getCandidates(exchange: types.IExchange, tickers: types.ITickers): Promise<any> {
+  async getCandidates(exchange: types.IExchange, tickers: types.ITickers): Promise<types.ITriangle[]> {
     let candidates: types.ITriangle[] = [];
     if (!exchange.markets) {
       logger.error(`getCandidates: exchange.marketsがありません!!`)

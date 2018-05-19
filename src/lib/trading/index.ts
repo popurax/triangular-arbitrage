@@ -38,13 +38,14 @@ export class Trading {
         return;
       }
 
+      logger.info('----- 三角裁定を開始 -----');
+      logger.info(`路径：${clc.cyanBright(triangle.id)} 利率: ${triangle.rate}`);
+
       if (config.trading.mock) {
         logger.error('モックモードで動いているので、実際に取引は行いません！！');
         return;
       }
 
-      logger.info('----- 三角裁定を開始 -----');
-      logger.info(`路径：${clc.cyanBright(triangle.id)} 利率: ${triangle.rate}`);
       // 清理超时数据
       // await this.storage.queue.clearQueue();
       const daemonCheck = await this.daemon.check(exchange);

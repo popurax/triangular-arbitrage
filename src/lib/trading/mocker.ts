@@ -1,6 +1,7 @@
 import { BigNumber } from 'bignumber.js';
 import * as ccxt from 'ccxt';
 import { logger, Helper } from '../common';
+import * as coinexchange from '../common/coinexchange/scraping';
 import { ApiHandler } from '../api-handler';
 import * as types from '../type';
 
@@ -65,53 +66,89 @@ export class Mocker extends ApiHandler {
       return;
     }
 
-    // 查询资产
-    const balances = await this.getBalance(exchange);
-    if (!balances) {
-      logger.error('通貨を保持していません!!');
-      return;
-    }
+    //// 查询资产
+    // const balances = await this.getBalance(exchange);
+    // if (!balances) {
+    //   logger.error('通貨を保持していません!!');
+    //   return;
+    // }
 
     const tradeTriangle = <types.ITradeTriangle>{
       coin: triangle.a.coinFrom,
       exchange: config.exchange.active,
     };
 
-    const asset = balances[tradeTriangle.coin];
-    if (!asset) {
-      logger.error(`${tradeTriangle.coin}を保有することができません!!`);
-      return;
-    }
-    const free = new BigNumber(asset.free);
-    if (free.isZero()) {
-      logger.error(`${tradeTriangle.coin}のフリーな保有量がありません!!`);
-      return;
-    }
-    // 获取交易精度
+
+    // const asset = balances[tradeTriangle.coin];
+    // if (!asset) {
+    //   logger.error(`${tradeTriangle.coin}を保有することができません!!`);
+    //   return;
+    // }
+    // const free = new BigNumber(asset.free);
+    // if (free.isZero()) {
+    //   logger.error(`${tradeTriangle.coin}のフリーな保有量がありません!!`);
+    //   return;
+    // }
+
+    //// mock
+    const free = new BigNumber(999999999);
+
+    //// 取引の正確性を得る
     const priceScale = Helper.getPriceScale(exchange.pairs, triangle.a.pair);
     if (!priceScale || !priceScale.cost) {
       logger.error(`正確なpricescale情報が取得できません!! priceScale:${priceScale.cost} a.pair:${triangle.a.pair}`)
       return;
     }
-    // 检查最小交易数量
-    let minAmount;
-    if (triangle.a.coinFrom.toUpperCase() !== 'BTC') {
-      minAmount = Helper.convertAmount(triangle.a.price, priceScale.cost, triangle.a.side).times(1.1);
+
+    var tradeAmount: BigNumber;
+
+    ////REVIEW ここでCoinexchangeのquantityを取得するが、mockerの役割ではないと思うので、修正検討。
+    if (config.exchange.active == 'coinexchange' && !triangle.a.quantity) {
+      await (async (triangle) => {
+        const scrape = await coinexchange.scraping.singleton();
+        const data: coinexchange.TopOrder[] = await scrape.fetchAskBidVolumes(
+          `https://www.coinexchange.io/market/${triangle.a.pair}`,
+          `https://www.coinexchange.io/market/${triangle.b.pair}`,
+          `https://www.coinexchange.io/market/${triangle.c.pair}`
+        )
+        triangle.a.quantity = triangle.a.side == 'buy' ? data[0].sellOrder.pairLeft : data[0].buyOrder.pairRight
+        triangle.b.quantity = triangle.b.side == 'buy' ? data[1].sellOrder.pairLeft : data[1].buyOrder.pairRight
+        triangle.c.quantity = triangle.c.side == 'buy' ? data[2].sellOrder.pairLeft : data[2].buyOrder.pairRight
+      })(triangle);
+
+      let b_amount = triangle.b.side == 'buy' ? triangle.a.quantity / triangle.b.price : triangle.a.quantity * triangle.b.price;
+      let b_min_amount = Math.min(b_amount, triangle.b.quantity);
+      let c_amount = triangle.c.side == 'buy' ? b_min_amount / triangle.c.price : b_min_amount * triangle.c.price;
+      let c_min_amount = Math.min(c_amount, triangle.c.quantity);
+      let min_amount = new BigNumber(c_min_amount.toString());
+      tradeAmount = min_amount;
+      // tradeAmount = new BigNumber(c_min_amount);
+      logger.info(`最小量：${tradeAmount.toNumber()}`)
     } else {
-      minAmount = Helper.getConvertedAmount({
-        side: triangle.a.side,
-        exchangeRate: triangle.a.price,
-        amount: priceScale.cost
-      }).times(1.1);
-    }
 
-    if (triangle.a.side === 'sell' && free.isLessThanOrEqualTo(minAmount)) {
-      logger.error(`持有${free + ' ' + triangle.a.coinFrom},小于最低交易数量（${minAmount}）！！`);
-      return;
-    }
-    // 查找最佳交易量
-    const tradeAmount = Helper.getBaseAmountByBC(triangle, free, minAmount);
+      //// 最小トランザクション数を確認する
+      let minAmount;
+      if (triangle.a.coinFrom.toUpperCase() !== 'BTC') {
+        minAmount = Helper.convertAmount(
+          triangle.a.price,
+          priceScale.cost,
+          triangle.a.side
+        ).times(1.1);
+      } else {
+        minAmount = Helper.getConvertedAmount({
+          side: triangle.a.side,
+          exchangeRate: triangle.a.price,
+          amount: priceScale.cost
+        }).times(1.1);
+      }
 
+      if (triangle.a.side === 'sell' && free.isLessThanOrEqualTo(minAmount)) {
+        logger.error(`持有${free + ' ' + triangle.a.coinFrom},小于最低交易数量（${minAmount}）！！`);
+        return;
+      }
+      //// 最適な取引量を見つける
+      tradeAmount = Helper.getBaseAmountByBC(triangle, free, minAmount);
+    }
     // ---------------------- A点开始------------------------
     const tradeEdgeA = this.getMockTradeEdge(exchange.pairs, triangle.a, tradeAmount);
     if (!tradeEdgeA) {
@@ -167,10 +204,11 @@ export class Mocker extends ApiHandler {
       exchangeRate: tradeTriangle.c.price,
       amount: tradeTriangle.c.amount
     })
+    //TODO
     tradeTriangle.after = +after.toFixed(8);
 
     const profit = new BigNumber(after).minus(tradeTriangle.before);
-    // 利润
+    // 利益
     tradeTriangle.profit = profit.toFixed(8);
     if (profit.isLessThanOrEqualTo(0)) {
       logger.info(`订单可行性检测结果，利润(${clc.redBright(tradeTriangle.profit)})为负数，终止下单！`);
@@ -183,11 +221,18 @@ export class Mocker extends ApiHandler {
         .div(tradeTriangle.before)
         .times(100)
         .toFixed(3) + '%';
+    const just_amount = tradeTriangle.a.amount - (tradeTriangle.a.amount * (parseFloat(tradeTriangle.rate.slice(0,-1)) / 100));
     tradeTriangle.ts = Date.now();
     logger.info(clc.yellowBright('----- 模拟交易结果 -----'));
+    logger.info(`三角：${tradeTriangle.a.pair}-${tradeTriangle.b.pair}-${tradeTriangle.c.pair}`)
     logger.info(`套利货币：${tradeTriangle.coin}`);
     logger.info(`套利前资产：${tradeTriangle.before}, 套利后资产：${tradeTriangle.after}`);
     logger.info(`利润：${clc.greenBright(tradeTriangle.profit)}, 利率：${clc.greenBright(tradeTriangle.rate)}`);
+    logger.info(`取引フロー：${tradeTriangle.a.side}(${tradeTriangle.a.amount}) → ${tradeTriangle.b.side}(${tradeTriangle.b.amount}) → ${tradeTriangle.c.side}(${tradeTriangle.c.amount})`)
+    logger.info(`URL: https://www.coinexchange.io/market/${triangle.a.pair},
+                https://www.coinexchange.io/market/${triangle.b.pair},
+                https://www.coinexchange.io/market/${triangle.c.pair}`)
+    logger.info(`最適量：${just_amount}`)
     return tradeTriangle;
   }
 }

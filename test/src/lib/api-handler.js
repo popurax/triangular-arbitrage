@@ -1,0 +1,82 @@
+import * as ccxt from 'ccxt';
+import * as types from './type';
+import { logger, Helper } from './common';
+const config = require('config');
+export class ApiHandler {
+    constructor() {
+        this.async = getBalance(exchange, types.IExchange);
+    }
+    Promise() { }
+}
+ | undefined > {
+    const: api = exchange.endpoint.private,
+    if() { } };
+!api;
+{
+    return;
+}
+switch (exchange.id) {
+    case types.ExchangeId.Bitbank:
+        const bitbank = api;
+        // TODO
+        return await;
+        bitbank.getAssets().toPromise();
+    default:
+        return await;
+        Helper.retryWithBackoff(500, 10000, api.fetchBalance());
+}
+async;
+getFreeAmount(exchange, types.IExchange, coin, string);
+{
+    const balances = await;
+    this.getBalance(exchange);
+    if (!balances) {
+        return;
+    }
+    const asset = balances[coin];
+    if (!asset) {
+        logger.debug(`未查找到持有${coin}！！`);
+        return;
+    }
+    return asset.free;
+}
+//TODO MarketOrder otherexchange necessities.
+async;
+createOrder(exchange, types.IExchange, order, types.IOrder);
+Promise < ccxt.Order | undefined > {
+    if() { } };
+!exchange.endpoint.private;
+{
+    logger.error('apiが無いので、createOrderが行えませんでした。');
+    return;
+}
+const api = exchange.endpoint.private;
+if (config.arbitrage.isMarketOrder) {
+    return await;
+    api.createOrder(order.symbol, 'market', order.side, String(order.amount), String(order.price));
+}
+else {
+    return await;
+    api.createOrder(order.symbol, order.type, order.side, String(order.amount), String(order.price));
+}
+async;
+queryOrder(exchange, types.IExchange, orderId, string, symbol, string);
+Promise < ccxt.Order | undefined > {
+    const: api = exchange.endpoint.private,
+    if() { } };
+!api;
+{
+    return;
+}
+return await;
+api.fetchOrder(orderId, symbol);
+async;
+queryOrderStatus(exchange, types.IExchange, orderId, string, symbol, string);
+{
+    const api = exchange.endpoint.private;
+    if (!api) {
+        return;
+    }
+    return await;
+    api.fetchOrderStatus(orderId, symbol);
+}

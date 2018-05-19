@@ -24,10 +24,10 @@ export class Rate {
   static convertAmount(price: number, cost: number, side: 'sell' | 'buy') {
     const bigCost = new BigNumber(cost);
     if (side === 'buy') {
-      // amount / price = cost
+      // amount * price = cost
       return bigCost.times(price);
     }
-    // amount * price = cost
+    // amount / price = cost
     return bigCost.div(price);
   }
 }
